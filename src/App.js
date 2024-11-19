@@ -7,6 +7,14 @@ function App() {
   const [NIM, setNIM] = useState("");
   const [data, setData] = useState(null); // Menyimpan data dari API
 
+  const konversiNilai = (nilai) => {
+    if (nilai >= 85) return 4.0;
+    if (nilai >= 65) return 3.0;
+    if (nilai >= 50) return 2.0;
+    if (nilai >= 40) return 1.0;
+    return 0.0;
+  };
+
   // Handle IPS Calculation
   const handleHitungIPS = async () => {
     if (!NIM) {
@@ -19,41 +27,64 @@ function App() {
     }
     try {
       const response = await axios.get(
-        `https://app-3e510776-7e8c-4ea1-bb2f-4e488fbc5ffc.cleverapps.io/hitung-ips/${NIM}`
+        `http://localhost:8080/hitung-ips/${NIM}`
       );
       const result = response.data;
 
+      // Validasi data hasil API
+      if (!result || !result.mataKuliahPerSemester) {
+        Swal.fire({
+          icon: "error",
+          title: "Data Tidak Valid",
+          text: "Data yang diterima tidak sesuai!",
+        });
+        return;
+      }
+
       // Mengelompokkan nilai IPS berdasarkan semester
-      const semesterMap = result.ipsPerSemester.reduce((acc, curr) => {
-        if (!acc[curr.semester]) {
-          acc[curr.semester] = [];
-        }
-        acc[curr.semester].push(curr.ips);
-        return acc;
-      }, {});
+      const semesterMap = Object.keys(result.mataKuliahPerSemester).reduce(
+        (acc, semester) => {
+          const mataKuliah = result.mataKuliahPerSemester[semester];
 
-      // Menghitung IPS rata-rata per semester
-      const ipsPerSemester = Object.keys(semesterMap).map((semester) => {
-        const ipsArray = semesterMap[semester];
-        const ipsAvg =
-          ipsArray.reduce((sum, ips) => sum + ips, 0) / ipsArray.length;
-        return {
-          semester: semester,
-          ips: ipsAvg.toFixed(2), // Menampilkan dua angka desimal
-        };
-      });
+          // Perhitungan total nilai (skala 4) dan total SKS
+          const totalNilai = mataKuliah.reduce(
+            (sum, mk) => sum + konversiNilai(mk.nilai) * mk.sks,
+            0
+          );
+          const totalSKS = mataKuliah.reduce((sum, mk) => sum + mk.sks, 0);
 
-      // Update data state
-      setData({
+          // Hitung IPS untuk semester ini
+          const ips = totalSKS > 0 ? totalNilai / totalSKS : 0;
+
+          acc[semester] = {
+            ips: ips.toFixed(2),
+            mataKuliah, // Menyimpan data mata kuliah untuk tiap semester
+          };
+          return acc;
+        },
+        {}
+      );
+
+      // Menghitung data IPS per semester
+      const ipsPerSemester = Object.keys(semesterMap).map((semester) => ({
+        semester,
+        ips: semesterMap[semester].ips,
+        mataKuliah: semesterMap[semester].mataKuliah,
+      }));
+
+      // Perbarui state dengan data IPS per semester
+      setData((prevData) => ({
+        ...prevData,
         ...result,
         ipsPerSemester,
-      });
+      }));
 
       Swal.fire({
         icon: "success",
         title: "IPS Berhasil Dihitung",
       });
     } catch (error) {
+      console.error("Error saat menghitung IPS:", error);
       Swal.fire({
         icon: "error",
         title: "Gagal Menghitung IPS",
@@ -82,19 +113,14 @@ function App() {
 
       <div>
         <button onClick={handleHitungIPS} className="btn btn-primary">
-          Hitung IPS
+          Hitung IPK
         </button>
       </div>
 
       {data && (
         <div className="mt-4">
-          {/* Display Nama, NIM, and IPK */}
-          {/* <h4>Nama Mahasiswa: {data.nama}</h4>
-          <h5>NIM: {data.nim}</h5>
-          <h5>IPK: {data.ipk}</h5> */}
-
           <table className="table table-striped mt-3">
-            <thead>
+            <thead className="table-light">
               <tr>
                 <th>NIM</th>
                 <th>Nama</th>
@@ -103,16 +129,17 @@ function App() {
             </thead>
             <tbody>
               <tr>
-                <td>{data.nim}</td> {/* Menampilkan NIM */}
-                <td>{data.nama}</td> {/* Menampilkan Nama Mahasiswa */}
-                <td>{data.ipk}</td> {/* Menampilkan IPK */}
+                <td>{data.nim}</td>
+                <td>{data.nama}</td>
+                <td>{data.ipk}</td>
               </tr>
             </tbody>
           </table>
 
           {/* Tabel IPS per semester */}
-          <table className="table table-striped mt-3">
-            <thead>
+          <h3>IPS persemester</h3>
+          <table className="table table-bordered mt-3 table-striped table-hover">
+            <thead className="table-light">
               <tr>
                 <th>Semester</th>
                 <th>IPS</th>
@@ -121,12 +148,37 @@ function App() {
             <tbody>
               {data.ipsPerSemester.map((semester, index) => (
                 <tr key={index}>
-                  <td>{semester.semester}</td> {/* Menampilkan Semester */}
-                  <td>{semester.ips}</td> {/* Menampilkan IPS per semester */}
+                  <td>{semester.semester}</td>
+                  <td>{semester.ips}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+          {/* Tabel mata kuliah per semester */}
+          {data.ipsPerSemester.map((semester, index) => (
+            <div key={index} className="mt-4">
+              <h5>Semester {semester.semester}</h5>
+              <table className="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Nama Mata Kuliah</th>
+                    <th>SKS</th>
+                    <th>Nilai</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {semester.mataKuliah.map((mk, idx) => (
+                    <tr key={idx}>
+                      <td>{mk.namaMataKuliah}</td>
+                      <td>{mk.sks}</td>
+                      <td>{mk.nilai}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
         </div>
       )}
     </div>
