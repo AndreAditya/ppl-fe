@@ -27,7 +27,8 @@ function App() {
     }
     try {
       const response = await axios.get(
-        `http://localhost:8080/hitung-ips/${NIM}`
+        // `http://localhost:8080/hitung-ips/${NIM}`
+        `https://app-3e510776-7e8c-4ea1-bb2f-4e488fbc5ffc.cleverapps.io/hitung-ips/${NIM}`
       );
       const result = response.data;
 
