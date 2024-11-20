@@ -82,25 +82,25 @@ function App() {
 
       Swal.fire({
         icon: "success",
-        title: "IPS Berhasil Dihitung",
+        title: "IPS & IPK Mahasiswa Berhasil Dihitung",
       });
     } catch (error) {
       console.error("Error saat menghitung IPS:", error);
       Swal.fire({
         icon: "error",
-        title: "Gagal Menghitung IPS",
-        text: "Terjadi kesalahan saat menghitung IPS!",
+        title: "Gagal Menemukan Data",
+        text: "Terjadi kesalahan saat menemukan IPS & IPK!",
       });
     }
   };
 
   return (
     <div className="container mt-5 shadow p-4 rounded">
-      <h1 className="text-center">Perhitungan IPK dan IPS Mahasiswa</h1>
+      <h1 className="text-center">Data IPK dan IPS Mahasiswa</h1>
 
-      <div className="mb-3">
+      <div className="mb-3 mt-5">
         <label htmlFor="nim" className="form-label">
-          NIM:
+          NIM :
         </label>
         <input
           id="nim"
@@ -114,7 +114,7 @@ function App() {
 
       <div>
         <button onClick={handleHitungIPS} className="btn btn-primary">
-          Hitung IPK
+          Cari...
         </button>
       </div>
 
@@ -138,9 +138,9 @@ function App() {
           </table>
 
           {/* Tabel IPS per semester */}
-          <h3>IPS persemester</h3>
-          <table className="table table-bordered mt-3 table-striped table-hover">
-            <thead className="table-light">
+          <h3 className="mt-5">IPS Persemester</h3>
+          <table className="table table-bordered mt-3 mb-5 table-striped table-hover">
+            <thead className="table-primary">
               <tr>
                 <th>Semester</th>
                 <th>IPS</th>
@@ -159,9 +159,9 @@ function App() {
           {/* Tabel mata kuliah per semester */}
           {data.ipsPerSemester.map((semester, index) => (
             <div key={index} className="mt-4">
-              <h5>Semester {semester.semester}</h5>
-              <table className="table table-bordered">
-                <thead>
+              <h5 className="mb-3">Semester {semester.semester}</h5>
+              <table className="table table-bordered mb-5">
+                <thead className="table-dark">
                   <tr>
                     <th>Nama Mata Kuliah</th>
                     <th>SKS</th>
